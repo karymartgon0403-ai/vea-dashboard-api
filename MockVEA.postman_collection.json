@@ -1,0 +1,62 @@
+{
+	"info": {
+		"_postman_id": "f08dfa1e-f4fa-48d1-a437-417789430904",
+		"name": "MockVEA",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "48887671",
+		"_collection_link": "https://karymartgon0403-7183243.postman.co/workspace/0383babc-cf32-4146-8148-2bb29a8db9f1/collection/48887671-f08dfa1e-f4fa-48d1-a437-417789430904?action=share&source=collection_link&creator=48887671"
+	},
+	"item": [
+		{
+			"name": "GET /api/usuarios",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "/api/usuarios"
+			},
+			"response": [
+				{
+					"name": "GET /api/usuarios",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": "/api/usuarios"
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": "",
+							"type": "text"
+						}
+					],
+					"cookie": [
+						{
+							"expires": "Invalid Date",
+							"domain": "",
+							"path": ""
+						}
+					],
+					"body": "{\r\n  \"data\": [\r\n    { \"estatus_turno_id\": 1, \"dia\": \"2025-08-15\", \"total\": 5 },\r\n    { \"estatus_turno_id\": 1, \"dia\": \"2025-08-16\", \"total\": 2 }\r\n  ]\r\n}\r\n"
+				}
+			]
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "https://119f8e0c-ab1c-43c4-8f73-366224cfce15.mock.pstmn.io"
+		}
+	]
+}
