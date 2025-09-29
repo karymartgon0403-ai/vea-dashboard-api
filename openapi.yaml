@@ -1,0 +1,485 @@
+openapi: 3.0.3
+info:
+  title: VEA Dashboard API
+  version: "1.0.0"
+  description: "Contrato de la API para exponer datos de VEA/SINAT al Dashboard."
+servers:
+  - url: https://api.vea.local
+    description: Servidor base (placeholder)
+
+tags:
+  - name: Auth
+  - name: Usuarios
+  - name: Trámites
+  - name: Notificaciones
+  - name: KPI
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Inicia sesión y devuelve un token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Renueva el token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/usuarios:
+    get:
+      tags:
+        - Usuarios
+      summary: Lista de usuarios (catálogo)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/q'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: Lista paginada de usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsuarios'
+      x-sql-example: |
+        SELECT usuario_id, rfc, curp, correo_electronico, razon_social, f_registro, f_ultimo_login
+        FROM vea.usuario
+        WHERE ({q} IS NULL OR razon_social ILIKE '%' || {q} || '%' OR rfc ILIKE '%' || {q} || '%')
+        ORDER BY usuario_id
+        LIMIT {limit} OFFSET {offset};
+
+  /api/tramites:
+    get:
+      tags:
+        - Trámites
+      summary: Lista de eventos de trámites (histórico)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          description: "Código de estado o situación (por ejemplo EST:1, V06, etc.)."
+          schema:
+            type: string
+        - $ref: '#/components/parameters/fecha_desde'
+        - $ref: '#/components/parameters/fecha_hasta'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTramites'
+      x-sql-example: |
+        SELECT tramite_id,
+               COALESCE(NULLIF(situacion_tramite_id,''), 'EST:' || estatus_id::text) AS estado,
+               f_actualiza AS fecha_evento
+        FROM vea.tramite_historico
+        WHERE ({estado} IS NULL OR COALESCE(NULLIF(situacion_tramite_id,''), 'EST:' || estatus_id::text) = {estado})
+          AND ({fecha_desde} IS NULL OR f_actualiza >= {fecha_desde})
+          AND ({fecha_hasta} IS NULL OR f_actualiza <  {fecha_hasta})
+        ORDER BY f_actualiza DESC
+        LIMIT {limit} OFFSET {offset};
+
+  /api/tramites/{tramite_id}:
+    get:
+      tags:
+        - Trámites
+      summary: Detalle de un trámite (histórico)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tramite_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Historial del trámite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tramite_id:
+                    type: integer
+                  eventos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TramiteEvento'
+      x-sql-example: |
+        SELECT tramite_id, estatus_id, situacion_tramite_id, f_actualiza
+        FROM vea.tramite_historico
+        WHERE tramite_id = {tramite_id}
+        ORDER BY f_actualiza;
+
+  /api/notificaciones:
+    get:
+      tags:
+        - Notificaciones
+      summary: Lista de notificaciones
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estatus_turno_id
+          in: query
+          schema:
+            type: integer
+        - name: oficina_id
+          in: query
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/fecha_desde'
+        - $ref: '#/components/parameters/fecha_hasta'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificaciones'
+      x-sql-example: |
+        SELECT turno_notificacion_id AS notificacion_id,
+               estatus_turno_id, oficina_id, funcionario_publico_id,
+               f_notificacion AS fecha_notificacion, f_registro AS fecha_registro
+        FROM vea.turno_notificacion
+        WHERE ({estatus_turno_id} IS NULL OR estatus_turno_id = {estatus_turno_id})
+          AND ({oficina_id} IS NULL OR oficina_id = {oficina_id})
+          AND ({fecha_desde} IS NULL OR COALESCE(f_notificacion, f_registro) >= {fecha_desde})
+          AND ({fecha_hasta} IS NULL OR COALESCE(f_notificacion, f_registro) <  {fecha_hasta})
+        ORDER BY COALESCE(f_notificacion, f_registro) DESC
+        LIMIT {limit} OFFSET {offset};
+
+  /api/kpi/notificaciones-status-dia:
+    get:
+      tags:
+        - KPI
+      summary: Serie por día y estatus de notificación
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/fecha_desde'
+        - $ref: '#/components/parameters/fecha_hasta'
+      responses:
+        '200':
+          description: Serie agregada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KPINotificacionesDia'
+      x-sql-example: |
+        SELECT estatus_turno_id, dia, total
+        FROM mart.mv_notificaciones_status
+        WHERE ({fecha_desde} IS NULL OR dia >= {fecha_desde}::date)
+          AND ({fecha_hasta} IS NULL OR dia <  {fecha_hasta}::date)
+        ORDER BY dia, estatus_turno_id;
+
+  /api/kpi/tramites-status-dia:
+    get:
+      tags:
+        - KPI
+      summary: Serie por día y estado de trámite
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/fecha_desde'
+        - $ref: '#/components/parameters/fecha_hasta'
+      responses:
+        '200':
+          description: Serie agregada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KPITramitesDia'
+      x-sql-example: |
+        SELECT estado, dia, total
+        FROM mart.mv_tramites_status
+        WHERE ({fecha_desde} IS NULL OR dia >= {fecha_desde}::date)
+          AND ({fecha_hasta} IS NULL OR dia <  {fecha_hasta}::date)
+        ORDER BY dia, estado;
+
+  /api/indicadores:
+    get:
+      tags:
+        - KPI
+      summary: Lista general de indicadores (agregador)
+      description: "Devuelve indicadores agregados según 'tipo'. Si no se especifica, devuelve un resumen."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tipo
+          in: query
+          description: "Tipo de indicador. Ejemplos: notificaciones_status_dia, tramites_status_dia"
+          schema:
+            type: string
+        - $ref: '#/components/parameters/fecha_desde'
+        - $ref: '#/components/parameters/fecha_hasta'
+      responses:
+        '200':
+          description: lista
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: '#/components/schemas/KPINotificacionesDia'
+                        - $ref: '#/components/schemas/KPITramitesDia'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    q:
+      name: q
+      in: query
+      description: Búsqueda libre
+      schema:
+        type: string
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 500
+    offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+    fecha_desde:
+      name: fecha_desde
+      in: query
+      description: "Fecha/hora inicial (RFC3339). Se incluye."
+      schema:
+        type: string
+        format: date-time
+    fecha_hasta:
+      name: fecha_hasta
+      in: query
+      description: "Fecha/hora final (RFC3339). Se excluye."
+      schema:
+        type: string
+        format: date-time
+
+  responses:
+    Unauthorized:
+      description: No autenticado o token inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 3600
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    Usuario:
+      type: object
+      properties:
+        usuario_id:
+          type: integer
+        rfc:
+          type: string
+        curp:
+          type: string
+        correo_electronico:
+          type: string
+          format: email
+        razon_social:
+          type: string
+        f_registro:
+          type: string
+          format: date-time
+        f_ultimo_login:
+          type: string
+          format: date-time
+
+    TramiteEvento:
+      type: object
+      properties:
+        tramite_id:
+          type: integer
+        estado:
+          type: string
+          description: "COALESCE(situacion_tramite_id, 'EST:'||estatus_id)"
+        fecha_evento:
+          type: string
+          format: date-time
+
+    Notificacion:
+      type: object
+      properties:
+        notificacion_id:
+          type: integer
+        estatus_turno_id:
+          type: integer
+        oficina_id:
+          type: integer
+        funcionario_publico_id:
+          type: integer
+        fecha_notificacion:
+          type: string
+          format: date-time
+          nullable: true
+        fecha_registro:
+          type: string
+          format: date-time
+
+    KPINotificacionesDia:
+      type: object
+      properties:
+        estatus_turno_id:
+          type: integer
+        dia:
+          type: string
+          format: date
+        total:
+          type: integer
+
+    KPITramitesDia:
+      type: object
+      properties:
+        estado:
+          type: string
+        dia:
+          type: string
+          format: date
+        total:
+          type: integer
+
+    PaginatedUsuarios:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Usuario'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+
+    PaginatedTramites:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TramiteEvento'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+
+    PaginatedNotificaciones:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notificacion'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer

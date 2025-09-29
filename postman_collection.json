@@ -1,0 +1,244 @@
+{
+  "info": {
+    "name": "VEA Dashboard API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "vea-collection-0001"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.vea.local"
+    },
+    {
+      "key": "token",
+      "value": "{{TOKEN}}"
+    },
+    {
+      "key": "desde",
+      "value": "2025-08-01T00:00:00Z"
+    },
+    {
+      "key": "hasta",
+      "value": "2025-09-01T00:00:00Z"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"demo\",\"password\":\"demo\"}"
+        }
+      }
+    },
+    {
+      "name": "Usuarios - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/usuarios?q=&limit=50&offset=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "usuarios"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": ""
+            },
+            {
+              "key": "limit",
+              "value": "50"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Trámites - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/tramites?estado=&fecha_desde={{desde}}&fecha_hasta={{hasta}}&limit=50&offset=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tramites"
+          ],
+          "query": [
+            {
+              "key": "estado",
+              "value": ""
+            },
+            {
+              "key": "fecha_desde",
+              "value": "{{desde}}"
+            },
+            {
+              "key": "fecha_hasta",
+              "value": "{{hasta}}"
+            },
+            {
+              "key": "limit",
+              "value": "50"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Notificaciones - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/notificaciones?estatus_turno_id=&fecha_desde={{desde}}&fecha_hasta={{hasta}}&limit=50&offset=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notificaciones"
+          ],
+          "query": [
+            {
+              "key": "estatus_turno_id",
+              "value": ""
+            },
+            {
+              "key": "fecha_desde",
+              "value": "{{desde}}"
+            },
+            {
+              "key": "fecha_hasta",
+              "value": "{{hasta}}"
+            },
+            {
+              "key": "limit",
+              "value": "50"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "KPI - Notificaciones status/día",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/kpi/notificaciones-status-dia?fecha_desde={{desde}}&fecha_hasta={{hasta}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "kpi",
+            "notificaciones-status-dia"
+          ],
+          "query": [
+            {
+              "key": "fecha_desde",
+              "value": "{{desde}}"
+            },
+            {
+              "key": "fecha_hasta",
+              "value": "{{hasta}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "KPI - Trámites estado/día",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/kpi/tramites-status-dia?fecha_desde={{desde}}&fecha_hasta={{hasta}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "kpi",
+            "tramites-status-dia"
+          ],
+          "query": [
+            {
+              "key": "fecha_desde",
+              "value": "{{desde}}"
+            },
+            {
+              "key": "fecha_hasta",
+              "value": "{{hasta}}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
