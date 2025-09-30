@@ -1,0 +1,2 @@
+PORT=8443
+JWT_SECRET=dev_secret_largo_y_aleatorio
